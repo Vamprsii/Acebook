@@ -1,0 +1,45 @@
+#docker-compose.yml
+version: "3.9"
+services:
+
+  postgres:
+    container_name: postgres-container
+    image: postgres
+    environment:
+      PGDATA: /data/postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: acebook-db
+      POSTGRES_PASSWORD: 1q2w3e4r
+    volumes:
+       - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+  app:
+    container_name: app_container
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+    environment:
+      DB_USER: postgres
+      DB_HOST: postgres-container
+      DB_NAME: acebook-db
+      DB_PASSWORD: 1q2w3e4r
+    ports:
+      - "8000:8000"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+networks:
+  postgres:
+    driver: bridge
+
+volumes:
+  postgres:
+
