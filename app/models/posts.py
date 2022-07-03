@@ -17,4 +17,6 @@ posts_table = sqlalchemy.Table(
     sqlalchemy.Column("liked_by", sqlalchemy.ARRAY(sqlalchemy.Integer)),
     sqlalchemy.Column("views", sqlalchemy.Integer()),
     sqlalchemy.Column("disapprove_comment", sqlalchemy.String()),
+    sqlalchemy.Column("section", sqlalchemy.String()),
+    sqlalchemy.Column("tags", sqlalchemy.ARRAY(sqlalchemy.String)),
 )

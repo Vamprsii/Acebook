@@ -20,3 +20,5 @@ class PostDetailsModel(PostModel):
     status: str
     disapprove_comment: typing.Optional[str]
     liked_by: list
+    section: str
+    tags: list

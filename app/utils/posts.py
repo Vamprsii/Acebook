@@ -18,7 +18,9 @@ async def create_post(post: post_schema.PostModel, user):
             status="published",
             likes=0,
             views=0,
-            liked_by=[]
+            liked_by=[],
+            section="",
+            tags=[],
         )
         .returning(
             posts_table.c.id,
@@ -30,6 +32,8 @@ async def create_post(post: post_schema.PostModel, user):
             posts_table.c.likes,
             posts_table.c.views,
             posts_table.c.liked_by,
+            posts_table.c.section,
+            posts_table.c.tags,
         )
     )
     post = await database.fetch_one(query)
@@ -53,6 +57,8 @@ async def get_post(post_id: int):
                 posts_table.c.views,
                 posts_table.c.disapprove_comment,
                 posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
             ]
         )
         .select_from(posts_table)
@@ -78,6 +84,18 @@ async def like_post(post_id: int, liked_by: list, likes: int):
     await database.execute(query)
 
 
+async def post_section(post_id: int, section: str):
+    query = posts_table.update().values(
+        section=section).where(posts_table.c.id == post_id)
+    await database.execute(query)
+
+
+async def post_tags(post_id: int, tags: list):
+    query = posts_table.update().values(
+        tags=tags).where(posts_table.c.id == post_id)
+    await database.execute(query)
+
+
 async def get_posts(page: int):
     max_per_page = 10
     offset1 = (page - 1) * max_per_page
@@ -93,6 +111,8 @@ async def get_posts(page: int):
                 posts_table.c.views,
                 posts_table.c.status,
                 posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
             ]
         )
         .select_from(posts_table)
@@ -118,6 +138,8 @@ async def get_posts_approved_only(page: int):
                 posts_table.c.views,
                 posts_table.c.status,
                 posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
             ]
         )
         .select_from(posts_table)
@@ -127,6 +149,183 @@ async def get_posts_approved_only(page: int):
         .offset(offset1)
     )
     return await database.fetch_all(query)
+
+
+async def get_posts_approved_only_likes_order(page: int):
+    max_per_page = 10
+    offset1 = (page - 1) * max_per_page
+    query = (
+        select(
+            [
+                posts_table.c.id,
+                posts_table.c.created_at,
+                posts_table.c.title,
+                posts_table.c.content,
+                posts_table.c.users_ids,
+                posts_table.c.likes,
+                posts_table.c.views,
+                posts_table.c.status,
+                posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
+            ]
+        )
+        .select_from(posts_table)
+        .where(posts_table.c.status == "approved")
+        .order_by(posts_table.c.likes.desc())
+        .limit(max_per_page)
+        .offset(offset1)
+    )
+    return await database.fetch_all(query)
+
+
+async def get_posts_approved_only_views_order(page: int):
+    max_per_page = 10
+    offset1 = (page - 1) * max_per_page
+    query = (
+        select(
+            [
+                posts_table.c.id,
+                posts_table.c.created_at,
+                posts_table.c.title,
+                posts_table.c.content,
+                posts_table.c.users_ids,
+                posts_table.c.likes,
+                posts_table.c.views,
+                posts_table.c.status,
+                posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
+            ]
+        )
+        .select_from(posts_table)
+        .where(posts_table.c.status == "approved")
+        .order_by(desc(posts_table.c.views))
+        .limit(max_per_page)
+        .offset(offset1)
+    )
+    return await database.fetch_all(query)
+
+
+async def get_posts_approved_only_title(page: int, search_string: str):
+    max_per_page = 10
+    offset1 = (page - 1) * max_per_page
+    query = (
+        select(
+            [
+                posts_table.c.id,
+                posts_table.c.created_at,
+                posts_table.c.title,
+                posts_table.c.content,
+                posts_table.c.users_ids,
+                posts_table.c.likes,
+                posts_table.c.views,
+                posts_table.c.status,
+                posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
+            ]
+        )
+        .select_from(posts_table)
+        .where(posts_table.c.status == "approved")
+        .order_by(desc(posts_table.c.created_at))
+        .limit(max_per_page)
+        .offset(offset1)
+    )
+    posts = await database.fetch_all(query)
+    _posts = [post for post in posts if (search_string in post["title"])]
+    return _posts
+
+
+async def get_posts_approved_only_content(page: int, search_string: str):
+    max_per_page = 10
+    offset1 = (page - 1) * max_per_page
+    query = (
+        select(
+            [
+                posts_table.c.id,
+                posts_table.c.created_at,
+                posts_table.c.title,
+                posts_table.c.content,
+                posts_table.c.users_ids,
+                posts_table.c.likes,
+                posts_table.c.views,
+                posts_table.c.status,
+                posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
+            ]
+        )
+        .select_from(posts_table)
+        .where(posts_table.c.status == "approved")
+        .order_by(desc(posts_table.c.created_at))
+        .limit(max_per_page)
+        .offset(offset1)
+    )
+    posts = await database.fetch_all(query)
+    _posts = [post for post in posts if (search_string in post["content"])]
+    return _posts
+
+
+async def get_posts_approved_only_authors(page: int, search_string: str):
+    max_per_page = 10
+    offset1 = (page - 1) * max_per_page
+    query = (
+        select(
+            [
+                posts_table.c.id,
+                posts_table.c.created_at,
+                posts_table.c.title,
+                posts_table.c.content,
+                posts_table.c.users_ids,
+                posts_table.c.likes,
+                posts_table.c.views,
+                posts_table.c.status,
+                posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
+            ]
+        )
+        .select_from(posts_table)
+        .where(posts_table.c.status == "approved")
+        .order_by(desc(posts_table.c.created_at))
+        .limit(max_per_page)
+        .offset(offset1)
+    )
+    posts = await database.fetch_all(query)
+    _posts = [post for post in posts if (
+        int(search_string) in post["users_ids"])]
+    return _posts
+
+
+async def get_posts_approved_only_tags(page: int, search_string: str):
+    max_per_page = 10
+    offset1 = (page - 1) * max_per_page
+    query = (
+        select(
+            [
+                posts_table.c.id,
+                posts_table.c.created_at,
+                posts_table.c.title,
+                posts_table.c.content,
+                posts_table.c.users_ids,
+                posts_table.c.likes,
+                posts_table.c.views,
+                posts_table.c.status,
+                posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
+            ]
+        )
+        .select_from(posts_table)
+        .where(posts_table.c.status == "approved")
+        .order_by(desc(posts_table.c.created_at))
+        .limit(max_per_page)
+        .offset(offset1)
+    )
+    posts = await database.fetch_all(query)
+    _posts = [post for post in posts if (search_string in post["tags"])]
+    return _posts
 
 
 async def get_posts_published_only(page: int):
@@ -144,6 +343,8 @@ async def get_posts_published_only(page: int):
                 posts_table.c.views,
                 posts_table.c.status,
                 posts_table.c.liked_by,
+                posts_table.c.section,
+                posts_table.c.tags,
             ]
         )
         .select_from(posts_table)
